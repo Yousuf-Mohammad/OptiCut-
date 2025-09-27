@@ -34,11 +34,7 @@ export function CTASection() {
             </Button>
           </div>
 
-          <div className="flex items-center justify-center space-x-8 pt-8 text-primary-foreground/60">
-            <span className="text-sm">✓ 14-day free trial</span>
-            <span className="text-sm">✓ No setup fees</span>
-            <span className="text-sm">✓ Cancel anytime</span>
-          </div>
+         
         </div>
       </div>
     </section>
