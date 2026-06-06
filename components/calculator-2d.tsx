@@ -104,52 +104,57 @@ export function Calculator2D() {
   const totalPieces = pieces.reduce((sum, p) => sum + p.quantity, 0)
 
   return (
-    <div className="grid lg:grid-cols-3 gap-6">
-      <div className="lg:col-span-2 space-y-4">
+    <div className="grid min-w-0 gap-4 lg:grid-cols-3 lg:gap-6">
+      <div className="min-w-0 space-y-4 lg:col-span-2">
 
         {/* Sheets */}
         <Card className="border-border/50 bg-card/60 card-accent-accent">
-          <CardHeader className="pb-4">
-            <CardTitle className="flex items-center gap-2.5 font-display text-base">
+          <CardHeader className="px-4 pb-4 sm:px-6">
+            <CardTitle className="flex flex-wrap items-center gap-2.5 font-display text-base">
               <div className="flex h-7 w-7 items-center justify-center rounded-md bg-accent/12 ring-1 ring-accent/25">
                 <Square className="h-3.5 w-3.5 text-accent" />
               </div>
               Sheet Material
-              <Badge variant="secondary" className="ml-auto text-xs">{sheets.length} type{sheets.length !== 1 ? "s" : ""}</Badge>
+              <Badge variant="secondary" className="ml-auto shrink-0 text-xs">{sheets.length} type{sheets.length !== 1 ? "s" : ""}</Badge>
             </CardTitle>
             <CardDescription>Available sheets to cut from</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-3 px-4 sm:px-6">
             {sheets.map((sheet, idx) => (
-              <div key={sheet.id} className="flex gap-3 items-end">
-                <div className="w-6 text-xs text-muted-foreground/60 font-mono text-right pt-7 shrink-0">{idx + 1}</div>
-                <div className="flex-1">
-                  <Label className="text-xs text-muted-foreground">Width</Label>
-                  <UnitInput unit="mm" type="number" min="1" value={sheet.width || ""}
-                    onChange={(e) => updateSheet(sheet.id, "width", Number(e.target.value))} placeholder="2440" />
+              <div key={sheet.id} className="rounded-lg border border-border/40 bg-muted/20 p-3">
+                <div className="mb-3 flex items-center justify-between">
+                  <span className="font-mono text-xs text-muted-foreground/60">Sheet {idx + 1}</span>
+                  <Button variant="ghost" size="icon" onClick={() => removeSheet(sheet.id)}
+                    disabled={sheets.length === 1} aria-label={`Remove sheet ${idx + 1}`}
+                    className="-mr-1 h-9 w-9 text-muted-foreground hover:text-destructive">
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
                 </div>
-                <div className="flex-1">
-                  <Label className="text-xs text-muted-foreground">Height</Label>
-                  <UnitInput unit="mm" type="number" min="1" value={sheet.height || ""}
-                    onChange={(e) => updateSheet(sheet.id, "height", Number(e.target.value))} placeholder="1220" />
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  <div className="min-w-0">
+                    <Label className="text-xs text-muted-foreground">Width</Label>
+                    <UnitInput unit="mm" type="number" min="1" value={sheet.width || ""}
+                      onChange={(e) => updateSheet(sheet.id, "width", Number(e.target.value))} placeholder="2440" />
+                  </div>
+                  <div className="min-w-0">
+                    <Label className="text-xs text-muted-foreground">Height</Label>
+                    <UnitInput unit="mm" type="number" min="1" value={sheet.height || ""}
+                      onChange={(e) => updateSheet(sheet.id, "height", Number(e.target.value))} placeholder="1220" />
+                  </div>
+                  <div className="min-w-0">
+                    <Label className="text-xs text-muted-foreground">Qty</Label>
+                    <Input type="number" min="1" value={sheet.quantity || ""}
+                      onChange={(e) => updateSheet(sheet.id, "quantity", Number(e.target.value))} placeholder="5" />
+                  </div>
+                  <div className="min-w-0">
+                    <Label className="text-xs text-muted-foreground">Cost</Label>
+                    <UnitInput unit="$" type="number" step="0.01" min="0" value={sheet.cost || ""}
+                      onChange={(e) => updateSheet(sheet.id, "cost", Number(e.target.value))} placeholder="150" className="pr-7" />
+                  </div>
                 </div>
-                <div className="w-18">
-                  <Label className="text-xs text-muted-foreground">Qty</Label>
-                  <Input type="number" min="1" value={sheet.quantity || ""}
-                    onChange={(e) => updateSheet(sheet.id, "quantity", Number(e.target.value))} placeholder="5" />
-                </div>
-                <div className="w-24">
-                  <Label className="text-xs text-muted-foreground">Cost</Label>
-                  <UnitInput unit="$" type="number" step="0.01" min="0" value={sheet.cost || ""}
-                    onChange={(e) => updateSheet(sheet.id, "cost", Number(e.target.value))} placeholder="150" className="pr-7" />
-                </div>
-                <Button variant="ghost" size="icon" onClick={() => removeSheet(sheet.id)}
-                  disabled={sheets.length === 1} className="mb-0 h-9 w-9 shrink-0 text-muted-foreground hover:text-destructive">
-                  <Trash2 className="h-3.5 w-3.5" />
-                </Button>
               </div>
             ))}
-            <Button variant="outline" onClick={addSheet} className="w-full border-dashed bg-transparent text-muted-foreground hover:text-foreground">
+            <Button variant="outline" onClick={addSheet} className="h-10 w-full border-dashed bg-transparent text-muted-foreground hover:text-foreground sm:h-9">
               <Plus className="mr-2 h-3.5 w-3.5" />Add Sheet Type
             </Button>
           </CardContent>
@@ -157,46 +162,49 @@ export function Calculator2D() {
 
         {/* Pieces */}
         <Card className="border-border/50 bg-card/60 card-accent-primary">
-          <CardHeader className="pb-4">
-            <CardTitle className="flex items-center gap-2.5 font-display text-base">
+          <CardHeader className="px-4 pb-4 sm:px-6">
+            <CardTitle className="flex flex-wrap items-center gap-2.5 font-display text-base">
               <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/12 ring-1 ring-primary/25">
                 <span className="text-xs font-bold text-primary">Pc</span>
               </div>
               Required Pieces
-              <Badge variant="secondary" className="ml-auto text-xs">{totalPieces} total</Badge>
+              <Badge variant="secondary" className="ml-auto shrink-0 text-xs">{totalPieces} total</Badge>
             </CardTitle>
             <CardDescription>Rectangular pieces to cut</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-3 px-4 sm:px-6">
             {pieces.map((piece, idx) => (
               <div key={piece.id} className="rounded-lg border border-border/40 bg-muted/20 p-3 space-y-3">
-                <div className="flex gap-3 items-end">
-                  <div className="w-5 text-xs text-muted-foreground/60 font-mono pt-6 shrink-0">{idx + 1}</div>
-                  <div className="w-28">
+                <div className="flex items-center justify-between">
+                  <span className="font-mono text-xs text-muted-foreground/60">Piece {idx + 1}</span>
+                  <Button variant="ghost" size="icon" onClick={() => removePiece(piece.id)}
+                    disabled={pieces.length === 1} aria-label={`Remove piece ${idx + 1}`}
+                    className="-mr-1 h-9 w-9 text-muted-foreground hover:text-destructive">
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+                <div className="grid grid-cols-2 gap-3 md:grid-cols-[minmax(7rem,1.25fr)_minmax(0,1fr)_minmax(0,1fr)_4rem]">
+                  <div className="col-span-2 min-w-0 md:col-span-1">
                     <Label className="text-xs text-muted-foreground">Label</Label>
                     <Input value={piece.label || ""} onChange={(e) => updatePiece(piece.id, "label", e.target.value)} placeholder="Panel A" />
                   </div>
-                  <div className="flex-1">
+                  <div className="min-w-0">
                     <Label className="text-xs text-muted-foreground">Width</Label>
                     <UnitInput unit="mm" type="number" min="1" value={piece.width || ""}
                       onChange={(e) => updatePiece(piece.id, "width", Number(e.target.value))} placeholder="600" />
                   </div>
-                  <div className="flex-1">
+                  <div className="min-w-0">
                     <Label className="text-xs text-muted-foreground">Height</Label>
                     <UnitInput unit="mm" type="number" min="1" value={piece.height || ""}
                       onChange={(e) => updatePiece(piece.id, "height", Number(e.target.value))} placeholder="400" />
                   </div>
-                  <div className="w-16">
+                  <div className="col-span-2 min-w-0 md:col-span-1">
                     <Label className="text-xs text-muted-foreground">Qty</Label>
                     <Input type="number" min="1" value={piece.quantity || ""}
                       onChange={(e) => updatePiece(piece.id, "quantity", Number(e.target.value))} placeholder="8" />
                   </div>
-                  <Button variant="ghost" size="icon" onClick={() => removePiece(piece.id)}
-                    disabled={pieces.length === 1} className="mb-0 h-9 w-9 shrink-0 text-muted-foreground hover:text-destructive">
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
                 </div>
-                <div className="flex items-center gap-2 ml-8">
+                <div className="flex items-center gap-2">
                   <Switch id={`rotate-${piece.id}`} checked={piece.canRotate}
                     onCheckedChange={(v) => updatePiece(piece.id, "canRotate", v)} />
                   <Label htmlFor={`rotate-${piece.id}`} className="text-xs text-muted-foreground cursor-pointer">
@@ -206,7 +214,7 @@ export function Calculator2D() {
                 </div>
               </div>
             ))}
-            <Button variant="outline" onClick={addPiece} className="w-full border-dashed bg-transparent text-muted-foreground hover:text-foreground">
+            <Button variant="outline" onClick={addPiece} className="h-10 w-full border-dashed bg-transparent text-muted-foreground hover:text-foreground sm:h-9">
               <Plus className="mr-2 h-3.5 w-3.5" />Add Piece Type
             </Button>
           </CardContent>
@@ -214,12 +222,12 @@ export function Calculator2D() {
 
         {/* Settings */}
         <Card className="border-border/50 bg-card/60">
-          <CardHeader className="pb-4">
+          <CardHeader className="px-4 pb-4 sm:px-6">
             <CardTitle className="font-display text-base">Cut Settings</CardTitle>
             <CardDescription>Sheet cutting parameters</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+          <CardContent className="space-y-4 px-4 sm:px-6">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label className="text-xs text-muted-foreground">Kerf Width</Label>
                 <UnitInput unit="mm" type="number" step="0.1" min="0" value={settings.kerfWidth}
@@ -246,9 +254,9 @@ export function Calculator2D() {
       </div>
 
       {/* Sidebar */}
-      <div className="space-y-4">
+      <div className="min-w-0 space-y-4">
         <Card className="border-border/50 bg-card/60">
-          <CardContent className="pt-6 space-y-3">
+          <CardContent className="space-y-3 px-4 pt-6 sm:px-6">
             <Button onClick={handleOptimize} disabled={isCalculating} className="w-full gap-2" size="lg">
               <Zap className={`h-4 w-4 ${isCalculating ? "animate-pulse" : ""}`} />
               {isCalculating ? "Optimizing…" : "Optimize 2D Cuts"}
@@ -266,10 +274,10 @@ export function Calculator2D() {
 
         {results ? (
           <Card className="border-border/50 bg-card/60">
-            <CardHeader className="pb-3">
+            <CardHeader className="px-4 pb-3 sm:px-6">
               <CardTitle className="font-display text-sm text-muted-foreground uppercase tracking-widest">Results</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="space-y-3 px-4 sm:px-6">
               <div className="rounded-lg bg-accent/8 ring-1 ring-accent/20 p-3 text-center">
                 <div className="font-display text-3xl font-bold text-accent">{results.efficiency}%</div>
                 <div className="text-xs text-muted-foreground mt-0.5">Material Efficiency</div>
@@ -311,7 +319,7 @@ export function Calculator2D() {
       </div>
 
       {results && (
-        <div className="lg:col-span-3">
+        <div className="min-w-0 lg:col-span-3">
           <Separator className="my-6" />
           <CuttingResults2D results={results} />
         </div>

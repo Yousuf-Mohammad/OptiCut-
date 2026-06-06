@@ -111,67 +111,72 @@ export function Calculator1D() {
   const totalPieceCount = requiredPieces.reduce((sum, p) => sum + p.quantity, 0)
 
   return (
-    <div className="grid lg:grid-cols-3 gap-6">
+    <div className="grid min-w-0 gap-4 lg:grid-cols-3 lg:gap-6">
       {/* ─── Left: inputs (2/3 width) ─── */}
-      <div className="lg:col-span-2 space-y-4">
+      <div className="min-w-0 space-y-4 lg:col-span-2">
 
         {/* Stock Materials */}
         <Card className="border-border/50 bg-card/60 card-accent-primary">
-          <CardHeader className="pb-4">
-            <CardTitle className="flex items-center gap-2.5 font-display text-base">
+          <CardHeader className="px-4 pb-4 sm:px-6">
+            <CardTitle className="flex flex-wrap items-center gap-2.5 font-display text-base">
               <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/12 ring-1 ring-primary/25">
                 <Ruler className="h-3.5 w-3.5 text-primary" />
               </div>
               Stock Material
-              <Badge variant="secondary" className="ml-auto text-xs">{stockItems.length} type{stockItems.length !== 1 ? "s" : ""}</Badge>
+              <Badge variant="secondary" className="ml-auto shrink-0 text-xs">{stockItems.length} type{stockItems.length !== 1 ? "s" : ""}</Badge>
             </CardTitle>
             <CardDescription>Available bars or profiles to cut from</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-3 px-4 sm:px-6">
             {stockItems.map((item, idx) => (
-              <div key={item.id} className="flex gap-3 items-end">
-                <div className="w-6 text-xs text-muted-foreground/60 font-mono text-right pt-7 shrink-0">{idx + 1}</div>
-                <div className="flex-1">
-                  <Label className="text-xs text-muted-foreground">Length</Label>
-                  <UnitInput
-                    unit="mm"
-                    type="number" min="1"
-                    value={item.length || ""}
-                    onChange={(e) => updateStockItem(item.id, "length", Number(e.target.value))}
-                    placeholder="3000"
-                  />
+              <div key={item.id} className="rounded-lg border border-border/40 bg-muted/20 p-3">
+                <div className="mb-3 flex items-center justify-between">
+                  <span className="font-mono text-xs text-muted-foreground/60">Stock {idx + 1}</span>
+                  <Button
+                    variant="ghost" size="icon"
+                    onClick={() => removeStockItem(item.id)}
+                    disabled={stockItems.length === 1}
+                    aria-label={`Remove stock ${idx + 1}`}
+                    className="-mr-1 h-9 w-9 text-muted-foreground hover:text-destructive"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
                 </div>
-                <div className="w-20">
-                  <Label className="text-xs text-muted-foreground">Qty</Label>
-                  <Input
-                    type="number" min="1"
-                    value={item.quantity || ""}
-                    onChange={(e) => updateStockItem(item.id, "quantity", Number(e.target.value))}
-                    placeholder="10"
-                  />
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-[minmax(0,1fr)_5rem_7rem]">
+                  <div className="col-span-2 min-w-0 sm:col-span-1">
+                    <Label className="text-xs text-muted-foreground">Length</Label>
+                    <UnitInput
+                      unit="mm"
+                      type="number" min="1"
+                      value={item.length || ""}
+                      onChange={(e) => updateStockItem(item.id, "length", Number(e.target.value))}
+                      placeholder="3000"
+                    />
+                  </div>
+                  <div className="min-w-0">
+                    <Label className="text-xs text-muted-foreground">Qty</Label>
+                    <Input
+                      type="number" min="1"
+                      value={item.quantity || ""}
+                      onChange={(e) => updateStockItem(item.id, "quantity", Number(e.target.value))}
+                      placeholder="10"
+                    />
+                  </div>
+                  <div className="min-w-0">
+                    <Label className="text-xs text-muted-foreground">Cost / unit</Label>
+                    <UnitInput
+                      unit="$"
+                      type="number" step="0.01" min="0"
+                      value={item.cost || ""}
+                      onChange={(e) => updateStockItem(item.id, "cost", Number(e.target.value))}
+                      placeholder="25.00"
+                      className="pr-7"
+                    />
+                  </div>
                 </div>
-                <div className="w-28">
-                  <Label className="text-xs text-muted-foreground">Cost / unit</Label>
-                  <UnitInput
-                    unit="$"
-                    type="number" step="0.01" min="0"
-                    value={item.cost || ""}
-                    onChange={(e) => updateStockItem(item.id, "cost", Number(e.target.value))}
-                    placeholder="25.00"
-                    className="pr-7"
-                  />
-                </div>
-                <Button
-                  variant="ghost" size="icon"
-                  onClick={() => removeStockItem(item.id)}
-                  disabled={stockItems.length === 1}
-                  className="mb-0 h-9 w-9 shrink-0 text-muted-foreground hover:text-destructive"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </Button>
               </div>
             ))}
-            <Button variant="outline" onClick={addStockItem} className="w-full border-dashed bg-transparent text-muted-foreground hover:text-foreground">
+            <Button variant="outline" onClick={addStockItem} className="h-10 w-full border-dashed bg-transparent text-muted-foreground hover:text-foreground sm:h-9">
               <Plus className="mr-2 h-3.5 w-3.5" />
               Add Stock
             </Button>
@@ -180,58 +185,63 @@ export function Calculator1D() {
 
         {/* Required Pieces */}
         <Card className="border-border/50 bg-card/60 card-accent-accent">
-          <CardHeader className="pb-4">
-            <CardTitle className="flex items-center gap-2.5 font-display text-base">
+          <CardHeader className="px-4 pb-4 sm:px-6">
+            <CardTitle className="flex flex-wrap items-center gap-2.5 font-display text-base">
               <div className="flex h-7 w-7 items-center justify-center rounded-md bg-accent/12 ring-1 ring-accent/25">
                 <span className="text-xs font-bold text-accent">Pc</span>
               </div>
               Required Pieces
-              <Badge variant="secondary" className="ml-auto text-xs">{totalPieceCount} total</Badge>
+              <Badge variant="secondary" className="ml-auto shrink-0 text-xs">{totalPieceCount} total</Badge>
             </CardTitle>
             <CardDescription>Pieces to cut from your stock</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-3 px-4 sm:px-6">
             {requiredPieces.map((piece, idx) => (
-              <div key={piece.id} className="flex gap-3 items-end">
-                <div className="w-6 text-xs text-muted-foreground/60 font-mono text-right pt-7 shrink-0">{idx + 1}</div>
-                <div className="w-28">
-                  <Label className="text-xs text-muted-foreground">Label</Label>
-                  <Input
-                    value={piece.label || ""}
-                    onChange={(e) => updateRequiredPiece(piece.id, "label", e.target.value)}
-                    placeholder="Piece A"
-                  />
+              <div key={piece.id} className="rounded-lg border border-border/40 bg-muted/20 p-3">
+                <div className="mb-3 flex items-center justify-between">
+                  <span className="font-mono text-xs text-muted-foreground/60">Piece {idx + 1}</span>
+                  <Button
+                    variant="ghost" size="icon"
+                    onClick={() => removeRequiredPiece(piece.id)}
+                    disabled={requiredPieces.length === 1}
+                    aria-label={`Remove piece ${idx + 1}`}
+                    className="-mr-1 h-9 w-9 text-muted-foreground hover:text-destructive"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
                 </div>
-                <div className="flex-1">
-                  <Label className="text-xs text-muted-foreground">Length</Label>
-                  <UnitInput
-                    unit="mm"
-                    type="number" min="1"
-                    value={piece.length || ""}
-                    onChange={(e) => updateRequiredPiece(piece.id, "length", Number(e.target.value))}
-                    placeholder="1200"
-                  />
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-[7rem_minmax(0,1fr)_5rem]">
+                  <div className="col-span-2 min-w-0 sm:col-span-1">
+                    <Label className="text-xs text-muted-foreground">Label</Label>
+                    <Input
+                      value={piece.label || ""}
+                      onChange={(e) => updateRequiredPiece(piece.id, "label", e.target.value)}
+                      placeholder="Piece A"
+                    />
+                  </div>
+                  <div className="min-w-0">
+                    <Label className="text-xs text-muted-foreground">Length</Label>
+                    <UnitInput
+                      unit="mm"
+                      type="number" min="1"
+                      value={piece.length || ""}
+                      onChange={(e) => updateRequiredPiece(piece.id, "length", Number(e.target.value))}
+                      placeholder="1200"
+                    />
+                  </div>
+                  <div className="min-w-0">
+                    <Label className="text-xs text-muted-foreground">Qty</Label>
+                    <Input
+                      type="number" min="1"
+                      value={piece.quantity || ""}
+                      onChange={(e) => updateRequiredPiece(piece.id, "quantity", Number(e.target.value))}
+                      placeholder="5"
+                    />
+                  </div>
                 </div>
-                <div className="w-20">
-                  <Label className="text-xs text-muted-foreground">Qty</Label>
-                  <Input
-                    type="number" min="1"
-                    value={piece.quantity || ""}
-                    onChange={(e) => updateRequiredPiece(piece.id, "quantity", Number(e.target.value))}
-                    placeholder="5"
-                  />
-                </div>
-                <Button
-                  variant="ghost" size="icon"
-                  onClick={() => removeRequiredPiece(piece.id)}
-                  disabled={requiredPieces.length === 1}
-                  className="mb-0 h-9 w-9 shrink-0 text-muted-foreground hover:text-destructive"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </Button>
               </div>
             ))}
-            <Button variant="outline" onClick={addRequiredPiece} className="w-full border-dashed bg-transparent text-muted-foreground hover:text-foreground">
+            <Button variant="outline" onClick={addRequiredPiece} className="h-10 w-full border-dashed bg-transparent text-muted-foreground hover:text-foreground sm:h-9">
               <Plus className="mr-2 h-3.5 w-3.5" />
               Add Piece
             </Button>
@@ -240,12 +250,12 @@ export function Calculator1D() {
 
         {/* Settings */}
         <Card className="border-border/50 bg-card/60">
-          <CardHeader className="pb-4">
+          <CardHeader className="px-4 pb-4 sm:px-6">
             <CardTitle className="font-display text-base">Cut Settings</CardTitle>
             <CardDescription>Blade and tolerance parameters</CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 gap-4">
+          <CardContent className="px-4 sm:px-6">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label className="text-xs text-muted-foreground">Kerf Width</Label>
                 <UnitInput
@@ -272,9 +282,9 @@ export function Calculator1D() {
       </div>
 
       {/* ─── Right: actions + stats ─── */}
-      <div className="space-y-4">
+      <div className="min-w-0 space-y-4">
         <Card className="border-border/50 bg-card/60">
-          <CardContent className="pt-6 space-y-3">
+          <CardContent className="space-y-3 px-4 pt-6 sm:px-6">
             <Button
               onClick={handleOptimize}
               disabled={isCalculating}
@@ -302,10 +312,10 @@ export function Calculator1D() {
         {/* Quick Stats */}
         {results ? (
           <Card className="border-border/50 bg-card/60">
-            <CardHeader className="pb-3">
+            <CardHeader className="px-4 pb-3 sm:px-6">
               <CardTitle className="font-display text-sm text-muted-foreground uppercase tracking-widest">Results</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="space-y-3 px-4 sm:px-6">
               <div className="rounded-lg bg-primary/8 ring-1 ring-primary/20 p-3 text-center">
                 <div className="font-display text-3xl font-bold text-primary">{results.efficiency}%</div>
                 <div className="text-xs text-muted-foreground mt-0.5">Material Efficiency</div>
@@ -348,7 +358,7 @@ export function Calculator1D() {
 
       {/* Results */}
       {results && (
-        <div className="lg:col-span-3">
+        <div className="min-w-0 lg:col-span-3">
           <Separator className="my-6" />
           <CuttingResults results={results} />
         </div>
