@@ -1,18 +1,13 @@
 "use client"
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Separator } from "@/components/ui/separator"
 
-
 interface CuttingPattern {
   stockLength: number
-  pieces: Array<{
-    label: string
-    length: number
-    color: string
-  }>
+  pieces: Array<{ label: string; length: number; color: string }>
   waste: number
   efficiency: number
 }
@@ -24,6 +19,7 @@ interface CuttingResultsProps {
     totalWaste: number
     stocksUsed: number
     costSavings: number
+    unplacedPieces?: number
     summary: {
       totalStockLength: number
       totalRequiredLength: number
@@ -32,189 +28,169 @@ interface CuttingResultsProps {
   }
 }
 
-const pieceColors = [
-  "#164e63", // primary
-  "#d97706", // accent
-  "#dc2626", // destructive
-  "#059669", // emerald
-  "#7c3aed", // violet
-  "#db2777", // pink
-  "#ea580c", // orange
-  "#0891b2", // cyan
-]
+function EfficiencyBadge({ value }: { value: number }) {
+  const color =
+    value >= 85 ? "text-emerald-400 bg-emerald-500/10 ring-emerald-500/20" :
+    value >= 65 ? "text-accent bg-accent/10 ring-accent/20" :
+    "text-destructive bg-destructive/10 ring-destructive/20"
+  return (
+    <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 ${color}`}>
+      {value}%
+    </span>
+  )
+}
 
 export function CuttingResults({ results }: CuttingResultsProps) {
-  const analyticsData = {
-    efficiency: results.efficiency,
-    wasteAmount: results.totalWaste,
-    costSavings: results.costSavings,
-    materialsUsed: results.stocksUsed,
-    dimension: "1D" as const,
-    patterns: results.patterns,
-    summary: results.summary,
-  }
+  const efficiencyColor =
+    results.efficiency >= 85 ? "text-emerald-400" :
+    results.efficiency >= 65 ? "text-accent" :
+    "text-destructive"
 
   return (
-    <div className="space-y-8">
-      <div className="text-center space-y-2">
-        <h2 className="text-2xl font-bold text-foreground">Optimization Results</h2>
-        <p className="text-muted-foreground">Your cutting patterns have been optimized for maximum efficiency</p>
-      </div>
-
-      {/* Summary Cards */}
-      <div className="grid md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-center space-y-2">
-              <div className="text-2xl font-bold text-primary">{results.efficiency}%</div>
-              <div className="text-sm text-muted-foreground">Material Efficiency</div>
+    <div className="space-y-6">
+      {/* Hero metric row */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card className="border-border/50 bg-card/60 col-span-2 md:col-span-1">
+          <CardContent className="pt-5 pb-5 text-center space-y-1">
+            <div className={`font-display text-4xl font-extrabold leading-none ${efficiencyColor}`}>
+              {results.efficiency}%
             </div>
+            <div className="text-xs text-muted-foreground">Material Efficiency</div>
+            <Progress value={results.efficiency} className="h-1 mt-2" />
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-center space-y-2">
-              <div className="text-2xl font-bold text-destructive">{results.totalWaste}mm</div>
-              <div className="text-sm text-muted-foreground">Total Waste</div>
-            </div>
+        <Card className="border-border/50 bg-card/60">
+          <CardContent className="pt-5 pb-5 text-center space-y-1">
+            <div className="font-display text-3xl font-bold text-foreground leading-none">{results.stocksUsed}</div>
+            <div className="text-xs text-muted-foreground">Stocks Used</div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-center space-y-2">
-              <div className="text-2xl font-bold text-foreground">{results.stocksUsed}</div>
-              <div className="text-sm text-muted-foreground">Stocks Used</div>
+        <Card className="border-border/50 bg-card/60">
+          <CardContent className="pt-5 pb-5 text-center space-y-1">
+            <div className="font-display text-3xl font-bold text-destructive leading-none">
+              {results.summary.wastePercentage}%
             </div>
+            <div className="text-xs text-muted-foreground">Waste Rate</div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-center space-y-2">
-              <div className="text-2xl font-bold text-accent">${results.costSavings}</div>
-              <div className="text-sm text-muted-foreground">Cost Savings</div>
-            </div>
+        <Card className="border-border/50 bg-card/60">
+          <CardContent className="pt-5 pb-5 text-center space-y-1">
+            <div className="font-display text-3xl font-bold text-accent leading-none">${results.costSavings}</div>
+            <div className="text-xs text-muted-foreground">Cost Savings</div>
           </CardContent>
         </Card>
       </div>
 
-
-
-      {/* Cutting Patterns */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Cutting Patterns</CardTitle>
-          <CardDescription>Visual representation of how to cut each stock piece</CardDescription>
+      {/* Cutting patterns */}
+      <Card className="border-border/50 bg-card/60">
+        <CardHeader className="pb-4">
+          <CardTitle className="font-display text-base">Cutting Patterns</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-5">
           {results.patterns.map((pattern, index) => (
-            <div key={index} className="space-y-3">
+            <div key={index} className="space-y-2.5">
               <div className="flex items-center justify-between">
-                <h3 className="font-semibold">
-                  Stock #{index + 1} ({pattern.stockLength}mm)
-                </h3>
+                <span className="text-sm font-medium text-foreground">
+                  Stock #{index + 1}
+                  <span className="ml-2 font-mono text-xs text-muted-foreground">{pattern.stockLength}mm</span>
+                </span>
                 <div className="flex items-center gap-2">
-                  <Badge variant="outline">Efficiency: {pattern.efficiency}%</Badge>
-                  <Badge variant={pattern.waste > 100 ? "destructive" : "secondary"}>Waste: {pattern.waste}mm</Badge>
+                  <EfficiencyBadge value={pattern.efficiency} />
+                  <Badge
+                    variant={pattern.waste > 100 ? "destructive" : "secondary"}
+                    className="text-xs font-mono"
+                  >
+                    {pattern.waste}mm waste
+                  </Badge>
                 </div>
               </div>
 
-              {/* Visual cutting pattern */}
-              <div className="relative">
-                <div className="h-12 bg-muted rounded-lg border-2 border-border overflow-hidden flex">
-                  {pattern.pieces.map((piece, pieceIndex) => {
-                    const widthPercentage = (piece.length / pattern.stockLength) * 100
-                    return (
-                      <div
-                        key={pieceIndex}
-                        className="h-full flex items-center justify-center text-xs font-medium text-white border-r border-background"
-                        style={{
-                          width: `${widthPercentage}%`,
-                          backgroundColor: piece.color,
-                          minWidth: "40px",
-                        }}
-                      >
-                        {piece.label}
-                      </div>
-                    )
-                  })}
-                  {pattern.waste > 0 && (
+              {/* Visual bar */}
+              <div className="h-10 rounded-lg border border-border/50 bg-muted/20 overflow-hidden flex">
+                {pattern.pieces.map((piece, pi) => {
+                  const pct = (piece.length / pattern.stockLength) * 100
+                  return (
                     <div
-                      className="h-full bg-destructive/20 border-l-2 border-destructive flex items-center justify-center text-xs text-destructive font-medium"
-                      style={{
-                        width: `${(pattern.waste / pattern.stockLength) * 100}%`,
-                      }}
+                      key={pi}
+                      className="h-full flex items-center justify-center overflow-hidden border-r border-background/30"
+                      style={{ width: `${pct}%`, backgroundColor: piece.color, minWidth: 32 }}
                     >
-                      Waste
+                      <span className="text-[10px] font-semibold text-white/90 px-1 truncate">{piece.label}</span>
                     </div>
-                  )}
-                </div>
-
-                {/* Length markers */}
-                <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                  <span>0mm</span>
-                  <span>{pattern.stockLength}mm</span>
-                </div>
+                  )
+                })}
+                {pattern.waste > 0 && (
+                  <div
+                    className="h-full flex items-center justify-center bg-destructive/15 border-l border-destructive/30"
+                    style={{ width: `${(pattern.waste / pattern.stockLength) * 100}%`, minWidth: 8 }}
+                  >
+                    {pattern.waste > 80 && (
+                      <span className="text-[9px] text-destructive/70 font-medium">waste</span>
+                    )}
+                  </div>
+                )}
               </div>
 
-              {/* Piece details */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                {pattern.pieces.map((piece, pieceIndex) => (
-                  <div key={pieceIndex} className="flex items-center gap-2 text-sm">
-                    <div className="w-3 h-3 rounded" style={{ backgroundColor: piece.color }} />
-                    <span>
-                      {piece.label}: {piece.length}mm
-                    </span>
+              {/* Length scale */}
+              <div className="flex justify-between text-[10px] font-mono text-muted-foreground/60 px-0.5">
+                <span>0</span>
+                <span>{pattern.stockLength}mm</span>
+              </div>
+
+              {/* Piece legend */}
+              <div className="flex flex-wrap gap-2">
+                {pattern.pieces.map((piece, pi) => (
+                  <div key={pi} className="flex items-center gap-1.5 text-xs">
+                    <div className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: piece.color }} />
+                    <span className="text-muted-foreground">{piece.label} — {piece.length}mm</span>
                   </div>
                 ))}
               </div>
 
-              {index < results.patterns.length - 1 && <Separator />}
+              {index < results.patterns.length - 1 && <Separator className="mt-3" />}
             </div>
           ))}
         </CardContent>
       </Card>
 
-      {/* Detailed Summary */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Optimization Summary</CardTitle>
+      {/* Summary */}
+      <Card className="border-border/50 bg-card/60">
+        <CardHeader className="pb-4">
+          <CardTitle className="font-display text-base">Summary</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent>
           <div className="grid md:grid-cols-2 gap-6">
             <div className="space-y-3">
-              <h4 className="font-semibold">Material Usage</h4>
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span>Total Stock Length:</span>
-                  <span className="font-medium">{results.summary.totalStockLength}mm</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span>Required Length:</span>
-                  <span className="font-medium">{results.summary.totalRequiredLength}mm</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span>Waste Percentage:</span>
-                  <span className="font-medium text-destructive">{results.summary.wastePercentage}%</span>
-                </div>
+              <h4 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Material Usage</h4>
+              <div className="space-y-2 text-sm">
+                {[
+                  ["Total Stock", `${results.summary.totalStockLength.toLocaleString()}mm`],
+                  ["Required Length", `${results.summary.totalRequiredLength.toLocaleString()}mm`],
+                  ["Waste", <span key="w" className="text-destructive">{results.summary.wastePercentage}%</span>],
+                ].map(([label, value]) => (
+                  <div key={String(label)} className="flex justify-between items-center py-1 border-b border-border/30">
+                    <span className="text-muted-foreground">{label}</span>
+                    <span className="font-medium">{value}</span>
+                  </div>
+                ))}
               </div>
             </div>
-
             <div className="space-y-3">
-              <h4 className="font-semibold">Efficiency Metrics</h4>
+              <h4 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Efficiency</h4>
               <div className="space-y-3">
                 <div>
-                  <div className="flex justify-between text-sm mb-1">
-                    <span>Material Utilization</span>
-                    <span>{results.efficiency}%</span>
+                  <div className="flex justify-between text-xs mb-1.5">
+                    <span className="text-muted-foreground">Material Utilization</span>
+                    <span className="font-mono font-medium">{results.efficiency}%</span>
                   </div>
-                  <Progress value={results.efficiency} className="h-2" />
+                  <Progress value={results.efficiency} className="h-1.5" />
                 </div>
                 <div>
-                  <div className="flex justify-between text-sm mb-1">
-                    <span>Waste Reduction</span>
-                    <span>{100 - results.summary.wastePercentage}%</span>
+                  <div className="flex justify-between text-xs mb-1.5">
+                    <span className="text-muted-foreground">Waste Reduction</span>
+                    <span className="font-mono font-medium">{100 - results.summary.wastePercentage}%</span>
                   </div>
-                  <Progress value={100 - results.summary.wastePercentage} className="h-2" />
+                  <Progress value={100 - results.summary.wastePercentage} className="h-1.5" />
                 </div>
               </div>
             </div>

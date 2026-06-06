@@ -1,26 +1,5 @@
-interface Sheet2D {
-  id: string
-  width: number
-  height: number
-  quantity: number
-  cost?: number
-}
-
-interface Piece2D {
-  id: string
-  width: number
-  height: number
-  quantity: number
-  label?: string
-  canRotate: boolean
-}
-
-interface OptimizationSettings2D {
-  kerfWidth: number
-  minWasteArea: number
-  allowRotation: boolean
-  margin: number
-}
+import { Sheet, Piece2D, CalculatorSettings2D } from "@/features/calculators/common/types"
+import { PIECE_COLORS } from "@/lib/constants"
 
 interface PlacedPiece2D {
   id: string
@@ -42,55 +21,48 @@ interface CuttingPattern2D {
   utilizedArea: number
 }
 
-const pieceColors = [
-  "#164e63", // primary
-  "#d97706", // accent
-  "#dc2626", // destructive
-  "#059669", // emerald
-  "#7c3aed", // violet
-  "#db2777", // pink
-  "#ea580c", // orange
-  "#0891b2", // cyan
-]
+interface OccupiedRect {
+  x: number
+  y: number
+  width: number
+  height: number
+}
 
-// Simple 2D bin packing algorithm using Bottom-Left Fill
-export function optimize2DCutting(sheets: Sheet2D[], pieces: Piece2D[], settings: OptimizationSettings2D) {
-  // Expand pieces into individual items
-  const allPieces: Array<Piece2D & { originalId: string; colorIndex: number }> = []
-  let colorIndex = 0
+export function optimize2DCutting(sheets: Sheet[], pieces: Piece2D[], settings: CalculatorSettings2D) {
+  // Expand by quantity, assign a stable color per piece type, sort largest-area first
+  const expandedPieces = pieces.flatMap((piece, typeIndex) =>
+    Array.from({ length: piece.quantity }, (_, i) => ({
+      ...piece,
+      id: `${piece.id}-${i}`,
+      originalId: piece.id,
+      quantity: 1,
+      colorIndex: typeIndex % PIECE_COLORS.length,
+    }))
+  )
+  expandedPieces.sort((a, b) => b.width * b.height - a.width * a.height)
 
-  pieces.forEach((piece) => {
-    for (let i = 0; i < piece.quantity; i++) {
-      allPieces.push({
-        ...piece,
-        id: `${piece.id}-${i}`,
-        originalId: piece.id,
-        quantity: 1,
-        colorIndex: colorIndex % pieceColors.length,
-      })
-    }
-    colorIndex++
-  })
-
-  // Sort pieces by area (descending) for better packing
-  allPieces.sort((a, b) => b.width * b.height - a.width * a.height)
+  const availableSheets = sheets.flatMap((sheet) =>
+    Array.from({ length: sheet.quantity }, () => ({
+      width: sheet.width,
+      height: sheet.height,
+      cost: sheet.cost,
+    }))
+  )
 
   const patterns: CuttingPattern2D[] = []
-  const remainingPieces = [...allPieces]
-  let sheetsUsed = 0
+  const remainingPieces = [...expandedPieces]
   let totalWasteArea = 0
 
-  // Expand sheets
-  const availableSheets: Array<{ width: number; height: number; cost?: number }> = []
-  sheets.forEach((sheet) => {
-    for (let i = 0; i < sheet.quantity; i++) {
-      availableSheets.push({ width: sheet.width, height: sheet.height, cost: sheet.cost })
-    }
-  })
+  while (remainingPieces.length > 0 && patterns.length < availableSheets.length) {
+    const currentSheet = availableSheets[patterns.length]
+    const innerWidth = currentSheet.width - 2 * settings.margin
+    const innerHeight = currentSheet.height - 2 * settings.margin
 
-  // Pack pieces into sheets
-  while (remainingPieces.length > 0 && sheetsUsed < availableSheets.length) {
-    const currentSheet = availableSheets[sheetsUsed]
+    const placedPieces = packPiecesIntoSheet(remainingPieces, innerWidth, innerHeight, settings)
+
+    // No pieces fit at all — remaining pieces exceed this sheet size; stop
+    if (placedPieces.length === 0) break
+
     const pattern: CuttingPattern2D = {
       sheetWidth: currentSheet.width,
       sheetHeight: currentSheet.height,
@@ -100,31 +72,23 @@ export function optimize2DCutting(sheets: Sheet2D[], pieces: Piece2D[], settings
       utilizedArea: 0,
     }
 
-    // Use a simple bottom-left fill algorithm
-    const placedPieces = packPiecesIntoSheet(
-      remainingPieces,
-      currentSheet.width - 2 * settings.margin,
-      currentSheet.height - 2 * settings.margin,
-      settings,
-    )
-
-    // Add placed pieces to pattern with margin offset
+    const placedIds = new Set(placedPieces.map((p) => p.id))
     placedPieces.forEach((piece) => {
       pattern.pieces.push({
         ...piece,
         x: piece.x + settings.margin,
         y: piece.y + settings.margin,
       })
-
-      // Remove from remaining pieces
-      const index = remainingPieces.findIndex((p) => p.id === piece.id)
-      if (index !== -1) {
-        remainingPieces.splice(index, 1)
-      }
     })
 
-    // Calculate pattern statistics
-    const utilizedArea = pattern.pieces.reduce((sum, piece) => sum + piece.width * piece.height, 0)
+    // Remove placed pieces from remaining
+    for (let i = remainingPieces.length - 1; i >= 0; i--) {
+      if (placedIds.has(remainingPieces[i].id)) {
+        remainingPieces.splice(i, 1)
+      }
+    }
+
+    const utilizedArea = pattern.pieces.reduce((sum, p) => sum + p.width * p.height, 0)
     const totalSheetArea = currentSheet.width * currentSheet.height
     pattern.utilizedArea = utilizedArea
     pattern.wasteArea = totalSheetArea - utilizedArea
@@ -132,26 +96,24 @@ export function optimize2DCutting(sheets: Sheet2D[], pieces: Piece2D[], settings
 
     totalWasteArea += pattern.wasteArea
     patterns.push(pattern)
-    sheetsUsed++
   }
 
-  // Calculate overall statistics
-  const totalSheetArea = sheetsUsed * (sheets[0]?.width * sheets[0]?.height || 0)
-  const totalRequiredArea = allPieces.reduce((sum, piece) => sum + piece.width * piece.height, 0)
-  const efficiency = Math.round((totalRequiredArea / totalSheetArea) * 100)
-  const wastePercentage = Math.round((totalWasteArea / totalSheetArea) * 100)
+  const totalSheetArea = patterns.reduce((sum, _, i) => sum + availableSheets[i].width * availableSheets[i].height, 0)
+  const totalRequiredArea = expandedPieces.reduce((sum, p) => sum + p.width * p.height, 0)
+  const efficiency = totalSheetArea > 0 ? Math.round((totalRequiredArea / totalSheetArea) * 100) : 0
+  const wastePercentage = totalSheetArea > 0 ? Math.round((totalWasteArea / totalSheetArea) * 100) : 0
 
-  // Calculate cost savings
-  const averageCost = sheets.reduce((sum, sheet) => sum + (sheet.cost || 150), 0) / sheets.length
+  const averageCost = sheets.reduce((sum, s) => sum + (s.cost || 150), 0) / sheets.length
   const potentialSheetsNeeded = Math.ceil(totalRequiredArea / (sheets[0]?.width * sheets[0]?.height || 1))
-  const costSavings = Math.round((potentialSheetsNeeded - sheetsUsed) * averageCost)
+  const costSavings = Math.max(0, Math.round((potentialSheetsNeeded - patterns.length) * averageCost))
 
   return {
     patterns,
     efficiency,
     totalWasteArea,
-    sheetsUsed,
-    costSavings: Math.max(0, costSavings),
+    sheetsUsed: patterns.length,
+    unplacedPieces: remainingPieces.length,
+    costSavings,
     summary: {
       totalSheetArea,
       totalRequiredArea,
@@ -164,35 +126,28 @@ function packPiecesIntoSheet(
   pieces: Array<Piece2D & { originalId: string; colorIndex: number }>,
   sheetWidth: number,
   sheetHeight: number,
-  settings: OptimizationSettings2D,
+  settings: CalculatorSettings2D,
 ): PlacedPiece2D[] {
   const placedPieces: PlacedPiece2D[] = []
-  const occupiedRects: Array<{ x: number; y: number; width: number; height: number }> = []
+  const occupiedRects: OccupiedRect[] = []
 
   for (const piece of pieces) {
-    let placed = false
-    const orientations = []
+    const orientations = [{ width: piece.width, height: piece.height, rotated: false }]
 
-    // Add original orientation
-    orientations.push({ width: piece.width, height: piece.height, rotated: false })
-
-    // Add rotated orientation if allowed
     if (settings.allowRotation && piece.canRotate && piece.width !== piece.height) {
       orientations.push({ width: piece.height, height: piece.width, rotated: true })
     }
 
-    // Try each orientation
+    let placed = false
     for (const orientation of orientations) {
       if (placed) break
 
-      const pieceWidth = orientation.width + settings.kerfWidth
-      const pieceHeight = orientation.height + settings.kerfWidth
+      const pw = orientation.width + settings.kerfWidth
+      const ph = orientation.height + settings.kerfWidth
 
-      // Try to place at each possible position (bottom-left fill)
-      for (let y = 0; y <= sheetHeight - pieceHeight; y += 10) {
-        if (placed) break
-        for (let x = 0; x <= sheetWidth - pieceWidth; x += 10) {
-          if (canPlacePiece(x, y, pieceWidth, pieceHeight, occupiedRects)) {
+      for (let y = 0; y <= sheetHeight - ph && !placed; y += 10) {
+        for (let x = 0; x <= sheetWidth - pw && !placed; x += 10) {
+          if (canPlace(x, y, pw, ph, occupiedRects)) {
             placedPieces.push({
               id: piece.id,
               label: piece.label || `Piece ${piece.originalId}`,
@@ -201,42 +156,30 @@ function packPiecesIntoSheet(
               width: orientation.width,
               height: orientation.height,
               rotated: orientation.rotated,
-              color: pieceColors[piece.colorIndex],
+              color: PIECE_COLORS[piece.colorIndex],
             })
-
-            occupiedRects.push({
-              x,
-              y,
-              width: pieceWidth,
-              height: pieceHeight,
-            })
-
+            occupiedRects.push({ x, y, width: pw, height: ph })
             placed = true
-            break
           }
         }
       }
     }
-
-    if (!placed) {
-      // If we can't place this piece, stop trying to place more pieces in this sheet
-      break
-    }
+    // If this piece didn't fit, continue to try the next piece (don't break)
   }
 
   return placedPieces
 }
 
-function canPlacePiece(
+function canPlace(
   x: number,
   y: number,
   width: number,
   height: number,
-  occupiedRects: Array<{ x: number; y: number; width: number; height: number }>,
+  occupied: OccupiedRect[],
 ): boolean {
-  for (const rect of occupiedRects) {
-    if (x < rect.x + rect.width && x + width > rect.x && y < rect.y + rect.height && y + height > rect.y) {
-      return false // Overlaps with existing piece
+  for (const r of occupied) {
+    if (x < r.x + r.width && x + width > r.x && y < r.y + r.height && y + height > r.y) {
+      return false
     }
   }
   return true

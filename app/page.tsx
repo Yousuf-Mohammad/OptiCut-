@@ -1,9 +1,9 @@
-import { Header } from "@/components/header"
-import { HeroSection } from "@/components/hero-section"
-import { FeaturesSection } from "@/components/features-section"
-import { StatsSection } from "@/components/stats-section"
-import { CTASection } from "@/components/cta-section"
-import { Footer } from "@/components/footer"
+import { Header } from "@/features/layout/Header"
+import { HeroSection } from "@/features/marketing/HeroSection"
+import { FeaturesSection } from "@/features/marketing/FeaturesSection"
+import { StatsSection } from "@/features/marketing/StatsSection"
+import { CTASection } from "@/features/marketing/CTASection"
+import { Footer } from "@/features/layout/Footer"
 
 export default function HomePage() {
   return (

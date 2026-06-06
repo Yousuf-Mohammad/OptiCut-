@@ -1,21 +1,5 @@
-interface StockItem {
-  id: string
-  length: number
-  quantity: number
-  cost?: number
-}
-
-interface RequiredPiece {
-  id: string
-  length: number
-  quantity: number
-  label?: string
-}
-
-interface OptimizationSettings {
-  kerfWidth: number
-  minWasteLength: number
-}
+import { StockBar, Piece1D, CalculatorSettings1D } from "@/features/calculators/common/types"
+import { PIECE_COLORS } from "@/lib/constants"
 
 interface CuttingPattern {
   stockLength: number
@@ -28,109 +12,91 @@ interface CuttingPattern {
   efficiency: number
 }
 
-const pieceColors = [
-  "#164e63", // primary
-  "#d97706", // accent
-  "#dc2626", // destructive
-  "#059669", // emerald
-  "#7c3aed", // violet
-  "#db2777", // pink
-  "#ea580c", // orange
-  "#0891b2", // cyan
-]
-
 export function optimize1DCutting(
-  stockItems: StockItem[],
-  requiredPieces: RequiredPiece[],
-  settings: OptimizationSettings,
+  stockItems: StockBar[],
+  requiredPieces: Piece1D[],
+  settings: CalculatorSettings1D,
 ) {
-  // Expand required pieces into individual pieces
-  const allRequiredPieces: Array<RequiredPiece & { originalId: string }> = []
-  requiredPieces.forEach((piece) => {
-    for (let i = 0; i < piece.quantity; i++) {
-      allRequiredPieces.push({
-        ...piece,
-        id: `${piece.id}-${i}`,
-        originalId: piece.id,
-        quantity: 1,
-      })
-    }
-  })
+  // Expand by quantity and sort largest-first for First Fit Decreasing
+  const expandedPieces = requiredPieces.flatMap((piece) =>
+    Array.from({ length: piece.quantity }, (_, i) => ({
+      ...piece,
+      id: `${piece.id}-${i}`,
+      originalId: piece.id,
+      quantity: 1,
+    }))
+  )
+  expandedPieces.sort((a, b) => b.length - a.length)
 
-  // Sort pieces by length (descending) for better optimization
-  allRequiredPieces.sort((a, b) => b.length - a.length)
+  const availableStocks = stockItems.flatMap((stock) =>
+    Array.from({ length: stock.quantity }, () => ({ length: stock.length, cost: stock.cost }))
+  )
 
   const patterns: CuttingPattern[] = []
-  const remainingPieces = [...allRequiredPieces]
-  let stockUsed = 0
-  let totalWaste = 0
+  const remainingPieces = [...expandedPieces]
+  let totalStockLength = 0
 
-  // Expand stock items
-  const availableStocks: Array<{ length: number; cost?: number }> = []
-  stockItems.forEach((stock) => {
-    for (let i = 0; i < stock.quantity; i++) {
-      availableStocks.push({ length: stock.length, cost: stock.cost })
-    }
-  })
-
-  // First Fit Decreasing algorithm
-  while (remainingPieces.length > 0 && stockUsed < availableStocks.length) {
-    const currentStock = availableStocks[stockUsed]
+  while (remainingPieces.length > 0 && patterns.length < availableStocks.length) {
+    const currentStock = availableStocks[patterns.length]
+    let remainingLength = currentStock.length
+    let colorIndex = 0
     const pattern: CuttingPattern = {
       stockLength: currentStock.length,
       pieces: [],
-      waste: currentStock.length,
+      waste: 0,
       efficiency: 0,
     }
 
-    let remainingLength = currentStock.length
-    let colorIndex = 0
-
-    // Try to fit pieces into current stock
-    for (let i = remainingPieces.length - 1; i >= 0; i--) {
-      const piece = remainingPieces[i]
+    // FFD: iterate pieces largest-first, greedily place each one that fits
+    const placedIds = new Set<string>()
+    for (const piece of remainingPieces) {
       const requiredLength = piece.length + settings.kerfWidth
-
       if (requiredLength <= remainingLength) {
         pattern.pieces.push({
           label: piece.label || `Piece ${piece.originalId}`,
           length: piece.length,
-          color: pieceColors[colorIndex % pieceColors.length],
+          color: PIECE_COLORS[colorIndex % PIECE_COLORS.length],
         })
-
         remainingLength -= requiredLength
-        remainingPieces.splice(i, 1)
+        placedIds.add(piece.id)
         colorIndex++
       }
     }
 
-    // Calculate pattern efficiency
+    // Remove placed pieces from remaining (iterate backward to preserve indices)
+    for (let i = remainingPieces.length - 1; i >= 0; i--) {
+      if (placedIds.has(remainingPieces[i].id)) {
+        remainingPieces.splice(i, 1)
+      }
+    }
+
     const usedLength = currentStock.length - remainingLength
     pattern.waste = Math.max(0, remainingLength)
     pattern.efficiency = Math.round((usedLength / currentStock.length) * 100)
 
-    totalWaste += pattern.waste
+    totalStockLength += currentStock.length
     patterns.push(pattern)
-    stockUsed++
+
+    // Stop if no piece fit — remaining pieces exceed any available stock length
+    if (placedIds.size === 0) break
   }
 
-  // Calculate overall statistics
-  const totalStockLength = stockUsed * (stockItems[0]?.length || 0)
-  const totalRequiredLength = allRequiredPieces.reduce((sum, piece) => sum + piece.length, 0)
-  const efficiency = Math.round((totalRequiredLength / totalStockLength) * 100)
-  const wastePercentage = Math.round((totalWaste / totalStockLength) * 100)
+  const totalRequiredLength = expandedPieces.reduce((sum, p) => sum + p.length, 0)
+  const totalWaste = patterns.reduce((sum, p) => sum + p.waste, 0)
+  const efficiency = totalStockLength > 0 ? Math.round((totalRequiredLength / totalStockLength) * 100) : 0
+  const wastePercentage = totalStockLength > 0 ? Math.round((totalWaste / totalStockLength) * 100) : 0
 
-  // Calculate cost savings (simplified)
   const averageCost = stockItems.reduce((sum, item) => sum + (item.cost || 25), 0) / stockItems.length
   const potentialStocksNeeded = Math.ceil(totalRequiredLength / (stockItems[0]?.length || 3000))
-  const costSavings = Math.round((potentialStocksNeeded - stockUsed) * averageCost)
+  const costSavings = Math.max(0, Math.round((potentialStocksNeeded - patterns.length) * averageCost))
 
   return {
     patterns,
     efficiency,
     totalWaste,
-    stocksUsed: stockUsed,
-    costSavings: Math.max(0, costSavings),
+    stocksUsed: patterns.length,
+    unplacedPieces: remainingPieces.length,
+    costSavings,
     summary: {
       totalStockLength,
       totalRequiredLength,
