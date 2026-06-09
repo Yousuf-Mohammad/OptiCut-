@@ -28,7 +28,7 @@ export function Footer() {
               </span>
             </div>
             <p className="text-sm text-muted-foreground leading-relaxed max-w-xs">
-              Precision cutting stock optimization for 1D, 2D, and 3D materials. Free, fast, and private.
+              Precision cutting stock optimization for 1D, 2D & 3D materials. Free, fast, and private.
             </p>
           </div>
 
