@@ -52,8 +52,19 @@ export function Footer() {
         </div>
 
         <div className="border-t border-border/40 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p className="text-xs text-muted-foreground">© {new Date().getFullYear()} OptiCut. All rights reserved.</p>
-          <p className="text-xs text-muted-foreground">All computation runs locally in your browser.</p>
+          <p className="text-xs text-muted-foreground">&copy; {new Date().getFullYear()} OptiCut. All rights reserved.</p>
+          {/* <p className="text-xs text-muted-foreground">All computation runs locally in your browser.</p> */}
+          <p className="text-xs text-muted-foreground">
+            Made by{" "}
+            <Link
+              href="https://yousufmohammad.vercel.app/"
+              target="_blank"
+              rel="noreferrer"
+              className="transition-colors hover:text-foreground"
+            >
+              Yousuf Mohammad
+            </Link>
+          </p>
         </div>
       </div>
     </footer>
