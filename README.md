@@ -1,6 +1,6 @@
 # OptiCut
 
-OptiCut is a web-based cutting stock optimizer for planning how to cut raw material into required parts with less waste. It is built for common workshop and production scenarios where material efficiency matters: bars, pipes, profiles, panels, boards, glass sheets, lumber, foam blocks, and other rectangular stock.
+OptiCut is a web-based cutting stock optimizer for planning how to cut raw material into required parts with less waste. It is built for common workshop and production scenarios where material efficiency matters: bars, pipes, profiles, panels, boards, glass sheets, lumber, foam blocks, and other rectangular stocks.
 
 The app lets you enter the material you have, the pieces you need, and the cutting constraints that affect the final layout. It then generates an optimized cutting plan with efficiency, waste, material usage, cost savings when costs are provided, and warnings for pieces that cannot be placed.
 
